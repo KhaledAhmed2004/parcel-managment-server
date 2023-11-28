@@ -8,6 +8,17 @@ require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
 
+// middleware
+const corsOptions = {
+  origin: ["http://localhost:5173", "http://localhost:5174"],
+  credentials: true,
+  optionSuccessStatus: 200,
+};
+app.use(cors(corsOptions));
+app.use(express.json());
+app.use(cookieParser());
+app.use(morgan("dev"));
+
 const client = new MongoClient(process.env.DB_URI, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -17,6 +28,24 @@ const client = new MongoClient(process.env.DB_URI, {
 });
 async function run() {
   try {
+    const usersCollection = client.db("parcel").collection("user");
+
+    // jwt token
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      console.log("I need a new jwt", user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "365d",
+      });
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
+        .send({ success: true });
+    });
+
     // Save or modify user data
     app.put("/users/:email", async (req, res) => {
       const email = req.params.email;
@@ -29,7 +58,7 @@ async function run() {
       const result = await usersCollection.updateOne(
         query,
         {
-          $set: { ...user, timestamp: Date.now() },
+          $set: { ...user },
         },
         options
       );
