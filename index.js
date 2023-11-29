@@ -19,6 +19,23 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(morgan("dev"));
 
+// jwt verify
+const verifyToken = async (req, res, next) => {
+  const token = req.cookies?.token;
+  console.log(token);
+  if (!token) {
+    return res.status(401).send({ message: "unauthorized access" });
+  }
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      console.log(err);
+      return res.status(401).send({ message: "unauthorized access" });
+    }
+    req.user = decoded;
+    next();
+  });
+};
+
 const client = new MongoClient(process.env.DB_URI, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -29,6 +46,9 @@ const client = new MongoClient(process.env.DB_URI, {
 async function run() {
   try {
     const usersCollection = client.db("parcel").collection("user");
+    const bookingParcelCollection = client
+      .db("parcel")
+      .collection("bookingParcel");
 
     // jwt token
     app.post("/jwt", async (req, res) => {
@@ -79,6 +99,12 @@ async function run() {
       } catch (err) {
         res.status(500).send(err);
       }
+    });
+
+    app.post("/bookParcel", verifyToken, async (req, res) => {
+      const booking = req.body;
+      const result = await bookingParcelCollection.insertOne(booking);
+      res.send(result);
     });
 
     console.log("mongodb is running...");
