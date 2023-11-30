@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
 const express = require("express");
@@ -85,6 +85,16 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/allUsers", async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.get("/user/:email", async (req, res) => {
+      const email = req.params.email;
+      const result = await usersCollection.findOne({ email });
+      res.send(result);
+    });
     // Logout
     app.get("/logout", async (req, res) => {
       try {
@@ -101,9 +111,64 @@ async function run() {
       }
     });
 
-    app.post("/bookParcel", verifyToken, async (req, res) => {
+    app.post("/bookParcel", async (req, res) => {
       const booking = req.body;
       const result = await bookingParcelCollection.insertOne(booking);
+      res.send(result);
+    });
+
+    app.put("/bookParcel/:id", async (req, res) => {
+      try {
+        const id = { _id: new ObjectId(req.params.id) };
+        const updateData = {
+          $set: {
+            ...req.body,
+          },
+        };
+        const option = { upsert: true };
+        const result = await bookingParcelCollection.updateOne(
+          id,
+          updateData,
+          option
+        );
+        res.send(result);
+      } catch (error) {
+        console.log("Error processing the JSON data:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+      }
+    });
+
+    app.get("/bookParcel/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await bookingParcelCollection.findOne(query);
+
+        if (!result) {
+          return res.status(404).send({ message: "Parcel not found" });
+        }
+
+        res.send(result);
+      } catch (error) {
+        console.error("Error retrieving parcel:", error);
+        res.status(500).send("Internal Server Error");
+      }
+    });
+    app.delete("/bookParcel/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await bookingParcelCollection.deleteOne(query);
+        res.send(result);
+      } catch (error) {
+        console.log("Error processing the JSON data:", error);
+      }
+    });
+    app.get("/myParcels/:email", async (req, res) => {
+      const email = req.params.email;
+      const result = await bookingParcelCollection
+        .find({ email: email })
+        .toArray();
       res.send(result);
     });
 
