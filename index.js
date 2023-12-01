@@ -46,6 +46,7 @@ const client = new MongoClient(process.env.DB_URI, {
 async function run() {
   try {
     const usersCollection = client.db("parcel").collection("user");
+    const deliveryManCollection = client.db("parcel").collection("deliveryMan");
     const bookingParcelCollection = client
       .db("parcel")
       .collection("bookingParcel");
@@ -102,10 +103,14 @@ async function run() {
     //   const result = await usersCollection.find().toArray();
     //   res.send(result);
     // });
-    // app.get("/allParcels", async (req, res) => {
-    //   const result = await bookingParcelCollection.find().toArray();
-    //   res.send(result);
-    // });
+    app.get("/allParcels", async (req, res) => {
+      const result = await bookingParcelCollection.find().toArray();
+      res.send(result);
+    });
+    app.get("/allDeliveryMan", async (req, res) => {
+      const result = await deliveryManCollection.find().toArray();
+      res.send(result);
+    });
 
     app.get("/user/:email", async (req, res) => {
       const email = req.params.email;
