@@ -86,9 +86,26 @@ async function run() {
     });
 
     app.get("/allUsers", async (req, res) => {
-      const result = await usersCollection.find().toArray();
-      res.send(result);
+      const userType = req.query.userType;
+      const query = userType ? { userType: userType } : {};
+
+      try {
+        const result = await usersCollection.find(query).toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error retrieving users:", error);
+        res.status(500).send("Internal Server Error");
+      }
     });
+
+    // app.get("/allUsers", async (req, res) => {
+    //   const result = await usersCollection.find().toArray();
+    //   res.send(result);
+    // });
+    // app.get("/allParcels", async (req, res) => {
+    //   const result = await bookingParcelCollection.find().toArray();
+    //   res.send(result);
+    // });
 
     app.get("/user/:email", async (req, res) => {
       const email = req.params.email;
